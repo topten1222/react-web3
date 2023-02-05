@@ -4,6 +4,7 @@ import { MetaMask } from '@web3-react/metamask'
 import { ethers } from 'ethers';
 import { formatEther, parseUnits } from '@ethersproject/units';
 import abi from './contract/abi.json'
+import Web3 from 'web3'
 
 import { 
   AppBar, Toolbar, Typography, Button, Chip, Stack, Container, Card,
@@ -15,7 +16,7 @@ import {
 const [metamask, hooks] = initializeConnector((actions) => new MetaMask(actions))
 const { useAccounts, useIsActive, useProvider } = hooks
 
-const contractAddress = '0xC0c7DCBee5879b35f4115FDfe2c2Fd5265d32838'
+const contractAddress = '0x848Bb450D01Cb7353b34a9dad027e11C00b5E75d'
 
 const getAddressTxt = (str, s = 6, e = 6) => {
   if (str) {
@@ -30,6 +31,7 @@ function App() {
   const provider = useProvider()
   const [balance, setBalance] = useState("")
   const [reiValue, setReiValue] = useState(0)
+  const [nft, setNftValue] = useState([])
 
   //load page initial function
   useEffect(() => {
@@ -46,17 +48,43 @@ function App() {
       console.log(err)
     }
   }
+
+  const fetchNFT = async () => {
+    try{
+      const provider = new ethers.providers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545")
+      const tokenContract = new ethers.Contract(contractAddress, abi, provider)
+      const response = await fetch(`https://api-testnet.bscscan.com/api?module=account&action=tokennfttx&address=${accounts[0]}&startblock=0&endblock=999999999&sort=asc`);
+      const data = await response.json();
+      const result = [];
+      for (let index = 0; index < data.result.length; index++) {
+        const tokenID = data.result[index].tokenID
+        const tokenURI = await tokenContract.tokenURI(tokenID)
+        const jsonData = decodeURI(tokenURI)
+        console.log(tokenURI)
+        let json = jsonData.substring(22);
+        const uriJson = decodeURIComponent(json);
+        //remark convert encode uri contract wrong beacuse fix replace
+        json = uriJson.replaceAll('\\', '').replaceAll('"{', '{').replaceAll(',}"', '}')
+        result.push(JSON.parse(json));
+      }
+      setNftValue(result)      
+    }catch(err) {
+      console.log(err)
+    }
+  }
+
+  
   useEffect(() => {
-    fetchBalance()
+    //fetchBalance()
     if (isActive) {
-      fetchBalance()
+      fetchNFT()
     }
 
   }, [isActive])
 
   const handleConnect = () => {
     //55556 เลข chain ID
-    metamask.activate(55556)
+    metamask.activate(97)
   }
 
   const handleDisconnect = () => {
@@ -111,45 +139,16 @@ function App() {
       <Container maxWidth="sm" sx={{ mt: 2 }}>
         { isActive &&
           <div>
-            <Card>
-              <CardContent>
-                <Stack spacing={2}>
-                  <Typography variant="h6" align="center">
-                    MTK
-                  </Typography>
-                  <TextField
-                    id="address"
-                    label="Address"
-                    value={accounts[0]}
-                    InputProps={{
-                      readOnly: true,
-                    }}
-                  />
-                  <TextField
-                    id="balance"
-                    label="MKT Balance"
-                    value={balance}
-                    InputProps={{
-                      readOnly: true,
-                    }}
-                  />
-                  <Divider/>
-                  <Typography variant="body1">
-                    Buy MTK (1 REI = 10 MKT)
-                  </Typography>
-                  <TextField
-                    required
-                    id="outlined-required"
-                    label="REI"
-                    defaultValue=""
-                    type="number"
-                    onChange={(e) => setReiValue(e.target.value)}
-                  />
-                  <Button variant="contained" onClick={handleBuy}>Buy</Button>
-
-                </Stack>
-              </CardContent>
-            </Card>
+            <h2>Wallet ID: {accounts[0]}</h2>
+            {nft.map((element, index) => {
+              return (
+                <div key={index}>
+                  <h2>NAME: {element.name}</h2>
+                  <h2>Description: {element.description}</h2>
+                  <img src={element.image} width="300px"/>
+                </div>
+              );
+            })}
           </div>
         }
       </Container>
