@@ -57,6 +57,11 @@ function App() {
       const data = await response.json();
       const result = [];
       for (let index = 0; index < data.result.length; index++) {
+        console.log(data.result[index].contractAddress.toLowerCase())
+        console.log(contractAddress)
+        if (contractAddress.toLowerCase() !== data.result[index].contractAddress.toLowerCase()) {
+          continue
+        }
         const tokenID = data.result[index].tokenID
         const tokenURI = await tokenContract.tokenURI(tokenID)
         const jsonData = decodeURI(tokenURI)
