@@ -63,6 +63,11 @@ function App() {
           continue
         }
         const tokenID = data.result[index].tokenID
+        const ownerWalletNftID = await tokenContract.ownerOf(tokenID)
+        console.log(ownerWalletNftID)
+        if (ownerWalletNftID !== accounts[0]) {
+          continue;
+        }
         const tokenURI = await tokenContract.tokenURI(tokenID)
         const jsonData = decodeURI(tokenURI)
         console.log(tokenURI)
